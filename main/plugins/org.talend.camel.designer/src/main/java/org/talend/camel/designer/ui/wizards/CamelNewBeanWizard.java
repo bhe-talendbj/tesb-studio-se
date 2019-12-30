@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2019 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -29,6 +29,7 @@ import org.talend.commons.exception.PersistenceException;
 import org.talend.commons.ui.runtime.exception.RuntimeExceptionHandler;
 import org.talend.commons.utils.VersionUtils;
 import org.talend.core.CorePlugin;
+import org.talend.core.GlobalServiceRegister;
 import org.talend.core.context.Context;
 import org.talend.core.context.RepositoryContext;
 import org.talend.core.model.general.ILibrariesService;
@@ -36,17 +37,20 @@ import org.talend.core.model.general.ModuleNeeded;
 import org.talend.core.model.properties.ByteArray;
 import org.talend.core.model.properties.PropertiesFactory;
 import org.talend.core.model.properties.Property;
+import org.talend.core.model.properties.RoutineItem;
 import org.talend.core.repository.model.ProxyRepositoryFactory;
 import org.talend.designer.core.model.utils.emf.component.ComponentFactory;
 import org.talend.designer.core.model.utils.emf.component.IMPORTType;
+import org.talend.designer.maven.tools.MavenPomSynchronizer;
+import org.talend.designer.runprocess.IRunProcessService;
 import org.talend.librariesmanager.model.ModulesNeededProvider;
 import org.talend.repository.model.IProxyRepositoryFactory;
 
 /**
  * Wizard for the creation of a new project. <br/>
- * 
+ *
  * $Id: NewProcessWizard.java 52559 2010-12-13 04:14:06Z nrousseau $
- * 
+ *
  */
 public class CamelNewBeanWizard extends Wizard {
 
@@ -62,7 +66,7 @@ public class CamelNewBeanWizard extends Wizard {
 
     /**
      * Constructs a new NewProjectWizard.
-     * 
+     *
      * @param author Project author.
      * @param server
      * @param password
@@ -100,7 +104,19 @@ public class CamelNewBeanWizard extends Wizard {
         addDefaultModulesForBeans();
     }
 
-    private void addDefaultModulesForBeans() {
+    private void refreshLibrariesListForTheBean() {
+	    GlobalServiceRegister globalServiceRegister = GlobalServiceRegister.getDefault();
+	    
+        if (globalServiceRegister.isServiceRegistered(IRunProcessService.class)) {
+	        IRunProcessService runProcessService = globalServiceRegister.getService(IRunProcessService.class);
+	
+	        MavenPomSynchronizer.addChangeLibrariesListener();
+	        
+	        runProcessService.updateLibraries((RoutineItem) beanItem.getProperty().getItem());
+    	}
+    }
+
+	private void addDefaultModulesForBeans() {
         List<ModuleNeeded> importNeedsList = ModulesNeededProvider.getModulesNeededForBeans();
 
         for (ModuleNeeded model : importNeedsList) {
@@ -141,13 +157,18 @@ public class CamelNewBeanWizard extends Wizard {
             MessageDialog.openError(getShell(), Messages.getString("NewBeanWizard.failureTitle"), ""); //$NON-NLS-1$ //$NON-NLS-2$
             ExceptionHandler.process(e);
         }
+        
+        if (beanItem != null) {
+        	refreshLibrariesListForTheBean();
+        	return true;
+        }
 
-        return beanItem != null;
+        return false;
     }
 
     /**
      * Getter for project.
-     * 
+     *
      * @return the project
      */
     public BeanItem getBean() {

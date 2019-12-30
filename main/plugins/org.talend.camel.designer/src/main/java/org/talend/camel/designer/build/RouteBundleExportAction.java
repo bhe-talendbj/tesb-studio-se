@@ -2,7 +2,7 @@
 //
 // Talend Community Edition
 //
-// Copyright (C) 2006-2018 Talend – www.talend.com
+// Copyright (C) 2006-2019 Talend – www.talend.com
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ public class RouteBundleExportAction extends JobExportAction {
 
     /**
      * DOC sunchaoqun RouteBundleExportAction constructor comment.
-     * 
+     *
      * @param nodes
      * @param jobVersion
      * @param bundleVersion
@@ -130,14 +130,16 @@ public class RouteBundleExportAction extends JobExportAction {
                 String relativePath = (String) element;
                 Set<URL> resource = fileResource.getResourcesByRelativePath(relativePath);
                 for (URL url : resource) {
-                    String currentResource = FilesUtils.getFileRealPath(url.getPath());
+                    // String currentResource = FilesUtils.getFileRealPath(url.getPath());
                     try {
-                        File file = new File(url.toURI());
+                        File file = new File(new File(url.getFile()).toURI());
                         if (FileConstants.META_INF_FOLDER_NAME.equals(fileResource.getDirectoryName())) {
                             FilesUtils.copyFile(file, getTemporaryStoreFile(file, FileConstants.META_INF_FOLDER_NAME));
                         } else if (fileResource.getDirectoryName().equals(LIB)) {
 
-                            if (file.getName().matches("^camel-(.*)-alldep-(.*)")) {
+                            if (file.getName().matches("^camel-(.*)-alldep-(.*)")
+                                    || file.getName().matches("^activemq-all-[\\d\\.]*.jar")
+                                    || file.getName().matches("^jms[\\d\\.-]*.jar")) {
                                 continue;
                             }
 

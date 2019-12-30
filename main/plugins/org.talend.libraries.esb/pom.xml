@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.talend.studio</groupId>
     <artifactId>tesb-studio-se</artifactId>
-    <version>7.2.1-SNAPSHOT</version>
+    <version>7.3.1-SNAPSHOT</version>
     <relativePath>../../../</relativePath>
   </parent>
   <artifactId>org.talend.libraries.esb</artifactId>
@@ -126,11 +126,16 @@
 
   <dependencies>
 	<!-- override 2.1.13 activated by cxf for java 6 -->
-	<!--dependency>
+	<dependency>
 		<groupId>com.sun.xml.bind</groupId>
 		<artifactId>jaxb-impl</artifactId>
-		<version>2.2.6</version>
-	</dependency-->
+		<version>2.2.11</version>
+	</dependency>
+	<dependency>
+		<groupId>com.sun.xml.bind</groupId>
+		<artifactId>jaxb-core</artifactId>
+		<version>2.2.11</version>
+	</dependency>
 	<dependency>
 		<groupId>org.apache.cxf</groupId>
 		<artifactId>cxf-core</artifactId>
@@ -312,12 +317,22 @@
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>annotations</artifactId>
             </exclusion>
+			<exclusion>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+			</exclusion>
         </exclusions>
     </dependency>
     <dependency>
         <groupId>org.apache.cxf</groupId>
         <artifactId>cxf-rt-features-logging</artifactId>
         <version>${cxf.version}</version>
+		<exclusions>
+			<exclusion>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+			</exclusion>
+		</exclusions>
     </dependency>
 	<!-- ESB Features-->
 	<dependency>
@@ -400,6 +415,10 @@
 				<groupId>commons-lang</groupId>
 				<artifactId>commons-lang</artifactId>
 			</exclusion>
+			<exclusion>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+			</exclusion>
 		</exclusions>
 	</dependency>
 	<!-- CorrelationID -->
@@ -467,6 +486,47 @@
         <groupId>javax.validation</groupId>
         <artifactId>validation-api</artifactId>
         <version>${validation-api.version}</version>
+    </dependency>
+    <!--  Java 11 Removed API  -->
+	<dependency>
+	    <groupId>jakarta.xml.soap</groupId>
+	    <artifactId>jakarta.xml.soap-api</artifactId>
+	    <version>1.4.1</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.apache.geronimo.specs</groupId>
+	    <artifactId>geronimo-ws-metadata_2.0_spec</artifactId>
+	    <version>1.1.3</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.xml.ws</groupId>
+	    <artifactId>jakarta.xml.ws-api</artifactId>
+	    <version>2.3.2</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.activation</groupId>
+	    <artifactId>jakarta.activation-api</artifactId>
+	    <version>1.2.1</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.xml.bind</groupId>
+	    <artifactId>jakarta.xml.bind-api</artifactId>
+	    <version>2.3.2</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.annotation</groupId>
+	    <artifactId>jakarta.annotation-api</artifactId>
+	    <version>1.3.4</version>
+	</dependency>
+	<dependency>
+	    <groupId>com.sun.activation</groupId>
+	    <artifactId>jakarta.activation</artifactId>
+	    <version>1.2.1</version>
+	</dependency>
+    <dependency>
+        <groupId>org.apache.servicemix.specs</groupId>
+        <artifactId>org.apache.servicemix.specs.jaxws-api-2.2</artifactId>
+        <version>2.9.0</version>
     </dependency>
   </dependencies>
 </project>

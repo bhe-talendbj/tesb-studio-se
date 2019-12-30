@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2019 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -97,6 +97,7 @@ import org.talend.repository.services.utils.OperationRepositoryObject;
 import org.talend.repository.services.utils.PortRepositoryObject;
 import org.talend.repository.services.utils.WSDLPopulationUtil;
 import org.talend.repository.services.utils.WSDLUtils;
+import org.talend.repository.utils.EmfModelUtils;
 
 /**
  * DOC nrousseau class global comment. ESB SOAP Service
@@ -344,7 +345,7 @@ public class ESBService implements IESBService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.core.IESBService#getServicesType()
      */
     @Override
@@ -527,7 +528,7 @@ public class ESBService implements IESBService {
 
     /**
      * When services connection is renamed, refresh the connection label in the component view of job.
-     * 
+     *
      * @param item
      */
     @Override
@@ -830,7 +831,7 @@ public class ESBService implements IESBService {
 
     /**
      * To fix [TESB-6072], tESBProviderRequest_x in job need to be update to binding to the new service.
-     * 
+     *
      * @param newProcessItem The cloned job process item.
      * @param serviceItem The cloned service item.
      * @param port
@@ -992,7 +993,7 @@ public class ESBService implements IESBService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.core.IESBService#getXSDPopulationUtil()
      */
     @Override
@@ -1032,7 +1033,7 @@ public class ESBService implements IESBService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.core.IESBService#getDefaultGroupIdSuffix(org.talend.core.model.properties.Property)
      */
     @Override
@@ -1089,13 +1090,45 @@ public class ESBService implements IESBService {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.core.IESBService#createOSGIJavaProcessor(org.talend.core.model.process.IProcess,
      * org.talend.core.model.properties.Property, boolean)
      */
     @Override
     public IProcessor createOSGIJavaProcessor(IProcess process, Property property, boolean filenameFromLabel) {
         return new OSGIJavaProcessor(process, property, filenameFromLabel);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.talend.core.IESBService#getSerivceRelatedJobIds(org.talend.core.model.properties.Item)
+     */
+    @Override
+    public List<String> getSerivceRelatedJobIds(Item serviceItem) {
+        List<String> ids = new ArrayList<String>();
+        if (serviceItem instanceof ServiceItem) {
+            ServiceItem item = (ServiceItem) serviceItem;
+            ServiceConnection conn = (ServiceConnection) item.getConnection();
+            for (ServicePort port : conn.getServicePort()) {
+                for (ServiceOperation operation : port.getServiceOperation()) {
+                    if (operation.getReferenceJobId() != null) {
+                        ids.add(operation.getReferenceJobId());
+                    }
+                }
+            }
+        }
+        return ids;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.talend.core.IESBService#isRESTService(org.talend.core.model.properties.ProcessItem)
+     */
+    @Override
+    public boolean isRESTService(ProcessItem processItem) {
+        return null != EmfModelUtils.getComponentByName(processItem, "tRESTRequest");
     }
 
 };

@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2019 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -62,7 +62,7 @@ import org.talend.repository.services.model.services.ServicePort;
 public class CreateMavenDataServicePom extends CreateMavenJobPom {
 
     /**
-     * 
+     *
      */
     private static final String MAVEN_VERSION = "4.0.0";
 
@@ -175,8 +175,11 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         pomModel.addModule(POM_FEATURE_XML);
 
         pomModel.addProfile(addProfileForCloud());
-        // pomModel.setBuild(new Build());
-        // pomModel.getBuild().addPlugin(addSkipDeployFeatureMavenPlugin());
+
+        pomModel.setBuild(new Build());
+
+        pomModel.getBuild().addPlugin(addSkipDockerMavenPlugin());
+
         PomUtil.savePom(monitor, pomModel, pom);
 
         Parent parentPom = new Parent();
@@ -200,6 +203,7 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         featureModel.setPackaging("pom");
         Build featureModelBuild = new Build();
         featureModelBuild.addPlugin(addFeaturesMavenPlugin());
+        featureModelBuild.addPlugin(addSkipDockerMavenPlugin());
         // featureModelBuild.addPlugin(
         // addDeployFeatureMavenPlugin(featureModel.getArtifactId(), featureModel.getVersion(), publishAsSnapshot));
         featureModelBuild.addPlugin(addSkipDeployFeatureMavenPlugin());
@@ -214,9 +218,9 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         featureModel.addProperty("talend.job.version", model.getProperties().getProperty("talend.job.version"));
         featureModel.addProperty("talend.product.version", VersionUtils.getVersion());
         featureModel.addProperty("talend.job.finalName", featureModel.getArtifactId() + "-" + featureModel.getVersion()); // DemoService-feature-0.1.0
-        
+
         featureModel.addProfile(addProfileForNexus(publishAsSnapshot, featureModel));
-        
+
         PomUtil.savePom(monitor, featureModel, feature);
 
         IFile controlBundle = pom.getParent().getFile(new Path(POM_CONTROL_BUNDLE_XML));
@@ -230,6 +234,7 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         controlBundleModel.setName(displayName + " Control Bundle");
         Build controlBundleModelBuild = new Build();
         controlBundleModelBuild.addPlugin(addControlBundleMavenPlugin());
+        controlBundleModelBuild.addPlugin(addSkipDockerMavenPlugin());
         controlBundleModelBuild.addResource(addControlBundleMavenResource());
         controlBundleModel.setBuild(controlBundleModelBuild);
         controlBundleModel.setParent(parentPom);
@@ -285,7 +290,7 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
 
     /*
      * feature.xml and copy wsdl, mainfest
-     * 
+     *
      * @see org.talend.designer.maven.tools.creator.CreateMavenJobPom#generateTemplates(boolean)
      */
     @Override
@@ -318,8 +323,8 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         Plugin plugin = new Plugin();
 
         plugin.setGroupId("org.apache.karaf.tooling");
-        plugin.setArtifactId("features-maven-plugin");
-        plugin.setVersion("2.2.9");
+        plugin.setArtifactId("karaf-maven-plugin");
+        plugin.setVersion("4.2.4");
 
         Xpp3Dom configuration = new Xpp3Dom("configuration");
 
@@ -335,7 +340,7 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
         List<PluginExecution> pluginExecutions = new ArrayList<PluginExecution>();
         PluginExecution pluginExecution = new PluginExecution();
         pluginExecution.setId("create-kar");
-        pluginExecution.addGoal("create-kar");
+        pluginExecution.addGoal("kar");
         pluginExecution.setConfiguration(configuration);
 
         pluginExecutions.add(pluginExecution);
@@ -381,7 +386,7 @@ public class CreateMavenDataServicePom extends CreateMavenJobPom {
 
     /**
      * Avoid clean control-bundle file in target folde, in case of using mvn clean package, TESB-22296
-     * 
+     *
      * @return plugin
      */
     private Plugin addSkipMavenCleanPlugin() {

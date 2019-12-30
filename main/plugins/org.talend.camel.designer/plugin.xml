@@ -291,6 +291,15 @@
                 version="7.0.1">
           </projecttask>
           <projecttask
+                beforeLogon="true"
+                breaks="5.6.0"
+                class="org.talend.camel.designer.migration.UpdateBeansDefaultLibrariesMigrationTask"
+                description="Update Beans default libraries"
+                id="org.talend.camel.designer.migration.UpdateBeansDefaultLibrariesMigrationTask"
+                name="UpdateBeansDefaultLibrariesMigrationTask"
+                version="7.2.1">
+          </projecttask>
+          <projecttask
                 beforeLogon="false"
                 breaks="5.6.0"
                 class="org.talend.camel.designer.migration.UpdateBuildTypeForCTalendJobMigrationTask"
@@ -339,6 +348,11 @@
 	                 mapping="CHECK_NEXUS_BUTTON"
 	                 name="cConfig Check Option">
 	        </generator>
+         <generator
+               class="org.talend.camel.designer.generator.LanguageComboGenerator"
+               mapping="LANGUAGE_CLOSED_LIST"
+               name="Language Closed List">
+         </generator>
         </extension>
         
         <extension

@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2019 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -14,6 +14,7 @@ package org.talend.camel.designer.ui.wizards;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -81,7 +82,7 @@ import org.talend.repository.ui.wizards.exportjob.util.ExportJobUtil;
 
 /**
  * DOC x class global comment. Detailled comment <br/>
- * 
+ *
  */
 public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizardPage {
 
@@ -141,13 +142,18 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
         Label label = new Label(optionsGroup, SWT.NONE);
         label.setText(Messages.getString("JavaJobScriptsExportWSWizardPage.BuildLabel")); //$NON-NLS-1$
 
+        boolean canESBMicroServiceDockerImage = PluginChecker.isDockerPluginLoaded();
+
         exportTypeCombo = new Combo(optionsGroup, SWT.PUSH);
 
         // TESB-5328
         exportTypeCombo.add(EXPORTTYPE_KAR);
         if (PluginChecker.isTIS()) {
             exportTypeCombo.add(EXPORTTYPE_SPRING_BOOT);
-            exportTypeCombo.add(EXPORTTYPE_SPRING_BOOT_DOCKER_IMAGE);
+
+            if (canESBMicroServiceDockerImage) {
+                exportTypeCombo.add(EXPORTTYPE_SPRING_BOOT_DOCKER_IMAGE);
+            }
         }
         // exportTypeCombo.setEnabled(false); // only can export kar file
         exportTypeCombo.setText(EXPORTTYPE_KAR);
@@ -156,7 +162,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
             /*
              * (non-Javadoc)
-             * 
+             *
              * @see org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse.swt.events.SelectionEvent)
              */
             @Override
@@ -213,7 +219,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
                     String destinationValue = getDestinationValue();
 
                     if (isMS) {
-                        if (exportAsZip || isAddMavenScript()) {
+                        if (exportAsZip) {
                             destinationValue = destinationValue.substring(0, destinationValue.lastIndexOf("."))
                                     + FileConstants.ZIP_FILE_SUFFIX;
                         } else {
@@ -437,7 +443,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.eclipse.ui.internal.wizards.datatransfer.WizardFileSystemResourceExportPage1#createDestinationGroup(org.
      * eclipse.swt.widgets.Composite)
      */
@@ -478,7 +484,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.repository.ui.wizards.exportjob.JobScriptsExportWizardPage#createControl(org.eclipse.swt.widgets.
      * Composite)
      */
@@ -520,7 +526,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
     /**
      * Answer the suffix that files exported from this wizard should have. If this suffix is a file extension (which is
      * typically the case) then it must include the leading period character.
-     * 
+     *
      */
     @Override
     protected String getOutputSuffix() {
@@ -534,10 +540,8 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
     protected void handleDestinationBrowseButtonPressed() {
         FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.SAVE);
 
-        if (isAddMavenScript()) {
-            dialog.setFilterExtensions(new String[] { "*" + FileConstants.ZIP_FILE_SUFFIX, "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
-        } else if (EXPORTTYPE_SPRING_BOOT.equals(exportTypeCombo.getText())) {
-            if (exportAsZip || isAddMavenScript()) {
+        if (EXPORTTYPE_SPRING_BOOT.equals(exportTypeCombo.getText())) {
+            if (exportAsZip) {
                 dialog.setFilterExtensions(new String[] { "*" + FileConstants.ZIP_FILE_SUFFIX, "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
             } else {
                 dialog.setFilterExtensions(new String[] { "*.jar", "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
@@ -559,10 +563,8 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
             return;
         }
         String idealSuffix;
-        if (isAddMavenScript()) {
-            idealSuffix = FileConstants.ZIP_FILE_SUFFIX;
-        } else if (EXPORTTYPE_SPRING_BOOT.equals(exportTypeCombo.getText())) {
-            if (exportAsZip || isAddMavenScript()) {
+        if (EXPORTTYPE_SPRING_BOOT.equals(exportTypeCombo.getText())) {
+            if (exportAsZip) {
                 idealSuffix = FileConstants.ZIP_FILE_SUFFIX;
             } else {
                 idealSuffix = FileConstants.JAR_FILE_SUFFIX;
@@ -635,6 +637,11 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
     @Override
     protected Map<ExportChoice, Object> getExportChoiceMap() {
+
+        if (exportTypeCombo.getText().equals(EXPORTTYPE_SPRING_BOOT_DOCKER_IMAGE)) {
+            return getExportChoiceMapForImage();
+        }
+
         Map<ExportChoice, Object> exportChoiceMap = new EnumMap<ExportChoice, Object>(ExportChoice.class);
         exportChoiceMap.put(ExportChoice.needJobItem, false);
         exportChoiceMap.put(ExportChoice.needSourceCode, false);
@@ -642,15 +649,11 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
         exportChoiceMap.put(ExportChoice.needMetaInfo, true);
         exportChoiceMap.put(ExportChoice.needContext, true);
         exportChoiceMap.put(ExportChoice.needLauncher, exportAsZip);
-        if (addBSButton != null) {
-            exportChoiceMap.put(ExportChoice.needMavenScript, addBSButton.getSelection());
+        exportChoiceMap.put(ExportChoice.needMavenScript, false);
 
-            if (isAddMavenScript()) {
-                exportChoiceMap.put(ExportChoice.needAssembly, true);
-                exportChoiceMap.put(ExportChoice.needLauncher, true);
-            }
-        }
         exportChoiceMap.put(ExportChoice.onlyDefautContext, onlyExportDefaultContext);
+
+        exportChoiceMap.put(ExportChoice.binaries, true);
 
         return exportChoiceMap;
     }
@@ -666,7 +669,21 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
             @Override
             public void widgetSelected(SelectionEvent e) {
+
+
                 exportTypeCombo.notifyListeners(SWT.Selection, null);
+//
+//                if (exportAsZipButton != null) {
+//
+//                    if (addBSButton.getSelection()) {
+//                        exportAsZipButton.setSelection(true);
+//                        exportAsZipButton.setEnabled(false);
+//                    } else {
+//                        exportAsZipButton.setEnabled(true);
+//                        exportAsZipButton.setSelection(false);
+//                    }
+//
+//                }
             }
         });
 
@@ -748,7 +765,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.repository.ui.wizards.exportjob.JobScriptsExportWizardPage#getContextName()
      */
     @Override
@@ -773,7 +790,7 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.talend.repository.ui.wizards.exportjob.JobScriptsExportWizardPage#checkExport()
      */
     @Override
@@ -799,13 +816,14 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
         JavaCamelJobScriptsExportWSAction action = null;
         IRunnableWithProgress actionMS = null;
         Map<ExportChoice, Object> exportChoiceMap = getExportChoiceMap();
-        boolean needMavenScript = exportChoiceMap.containsKey(ExportChoice.needMavenScript)
-                && exportChoiceMap.get(ExportChoice.needMavenScript) == Boolean.TRUE;
+        boolean needMavenScript = false;
+        // exportChoiceMap.containsKey(ExportChoice.needMavenScript) &&
+        // exportChoiceMap.get(ExportChoice.needMavenScript) == Boolean.TRUE;
 
         if (needMavenScript && destinationKar.regionMatches(true, destinationKar.length() - 4, ".kar", 0, 4)) {
             destinationKar = destinationKar.substring(0, destinationKar.length() - 3) + "zip";
         }
-        
+
         if(exportAsZip) {
             exportChoiceMap.put(ExportChoice.needAssembly, Boolean.TRUE);
         }
@@ -823,45 +841,24 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
         if (GlobalServiceRegister.getDefault().isServiceRegistered(IESBMicroService.class)) {
             microService = (IESBMicroService) GlobalServiceRegister.getDefault().getService(IESBMicroService.class);
         }
-        
+
         IBuildJobHandler buildJobHandler = null;
 
         if (exportTypeCombo.getText().equals(EXPORTTYPE_SPRING_BOOT)
                 || exportTypeCombo.getText().equals(EXPORTTYPE_SPRING_BOOT_DOCKER_IMAGE)) {
 
-            try {
-                if (microService != null) {
+            IRunnableWithProgress worker = new IRunnableWithProgress() {
 
-                    if (exportTypeCombo.getText().equals(EXPORTTYPE_SPRING_BOOT_DOCKER_IMAGE)) {
-                        exportChoiceMap = getExportChoiceMapForImage();
-                    }
+                @Override
+                public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 
-                    buildJobHandler = microService.createBuildJobHandler(getProcessItem(), version, destinationKar,
-                            exportChoiceMap);
+                    buildJobWithMaven(exportTypeCombo.getText().equals(EXPORTTYPE_SPRING_BOOT) ? JobExportType.ROUTE
+                            : JobExportType.MSESB_IMAGE, monitor);
 
-                    Map<String, Object> prepareParams = new HashMap<String, Object>();
-                    prepareParams.put(IBuildResourceParametes.OPTION_ITEMS, true);
-                    prepareParams.put(IBuildResourceParametes.OPTION_ITEMS_DEPENDENCIES, true);
-
-                    try {
-                        buildJobHandler.prepare(monitor, prepareParams);
-                    } catch (Exception e) {
-                        MessageBoxExceptionHandler.process(e.getCause() == null ? e : e.getCause(), getShell());
-                        return false;
-                    }
-
-                    actionMS = microService.createRunnableWithProgress(exportChoiceMap, Arrays.asList(getCheckNodes()), version,
-                            destinationKar, "");
                 }
-
-            } catch (Exception e) {
-                MessageBoxExceptionHandler.process(e.getCause() == null ? e : e.getCause(), getShell());
-                e.printStackTrace();
-            }
-
+            };
             try {
-                getContainer().run(false, true, actionMS);
-                buildJobHandler.build(monitor);
+                getContainer().run(false, true, worker);
             } catch (Exception e) {
                 MessageBoxExceptionHandler.process(e.getCause() == null ? e : e.getCause(), getShell());
                 return false;
@@ -910,16 +907,16 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
                 return false;
             }
 
-        }
+            IFile targetFile = buildJobHandler.getJobTargetFile();
 
-        IFile targetFile = buildJobHandler.getJobTargetFile();
-
-        if (targetFile != null && targetFile.exists()) {
-            try {
-                FilesUtils.copyFile(targetFile.getLocation().toFile(), new File(getDestinationValue()));
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (targetFile != null && targetFile.exists()) {
+                try {
+                    FilesUtils.copyFile(targetFile.getLocation().toFile(), new File(getDestinationValue()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+
         }
 
         return true;
@@ -948,6 +945,8 @@ public class JavaCamelJobScriptsExportWSWizardPage extends JobScriptsExportWizar
         exportChoiceMap.put(ExportChoice.buildImage, Boolean.TRUE);
         exportChoiceMap.put(ExportChoice.needLauncher, Boolean.TRUE);
         exportChoiceMap.put(ExportChoice.launcherName, JobScriptsManager.UNIX_ENVIRONMENT);
+
+        exportChoiceMap.put(ExportChoice.binaries, true);
 //        exportChoiceMap.put(ExportChoice.needSystemRoutine, Boolean.TRUE);
 //        exportChoiceMap.put(ExportChoice.needUserRoutine, Boolean.TRUE);
 //        exportChoiceMap.put(ExportChoice.needTalendLibraries, Boolean.TRUE);
